@@ -1,0 +1,234 @@
+# Alertmanager Configuration - Barber Analytics Pro
+# Gerenciamento de alertas com roteamento por severidade e múltiplos canais
+
+global:
+  # Tempo para resolver alertas automaticamente se condição normalizar
+  resolve_timeout: 5m
+
+  # Configurações SMTP (Email)
+  smtp_from: 'alerts@barberanalytics.com.br'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_auth_username: 'alerts@barberanalytics.com.br'
+  smtp_auth_password: '${SMTP_PASSWORD}'  # Variável de ambiente
+  smtp_require_tls: true
+
+# Templates para mensagens customizadas
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Configuração de rotas (roteamento de alertas por severidade/tipo)
+route:
+  # Receiver padrão (caso nenhuma rota específica combine)
+  receiver: 'default-slack'
+
+  # Agrupar alertas por estas labels para evitar spam
+  group_by: ['alertname', 'component', 'severity']
+
+  # Aguardar 30s antes de enviar alerta (caso múltiplos alertas similares)
+  group_wait: 30s
+
+  # Aguardar 5m antes de enviar notificação de novos alertas no mesmo grupo
+  group_interval: 5m
+
+  # Enviar novamente alertas não resolvidos a cada 4h
+  repeat_interval: 4h
+
+  # Rotas específicas por severidade e componente
+  routes:
+    # CRITICAL: Enviar para todos os canais (Slack + Email + Telegram)
+    - match:
+        severity: critical
+      receiver: 'critical-all-channels'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 30m
+      continue: false  # Não processar outras rotas
+
+    # WARNING: Apenas Slack (não spammar email/telegram)
+    - match:
+        severity: warning
+      receiver: 'warning-slack'
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 2h
+
+    # Database alerts: Canal específico para DBAs
+    - match:
+        component: database
+      receiver: 'database-team'
+      group_wait: 30s
+
+    # Scheduler/Cron alerts: Canal específico para backend team
+    - match:
+        component: scheduler
+      receiver: 'backend-team-slack'
+      group_wait: 1m
+
+# ==============================================================================
+# RECEIVERS (Canais de notificação)
+# ==============================================================================
+receivers:
+  # ---------------------------------------------------------------------------
+  # SLACK RECEIVERS
+  # ---------------------------------------------------------------------------
+  - name: 'default-slack'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'  # Variável de ambiente
+        channel: '#barber-alerts'
+        username: 'Barber Alertmanager'
+        icon_emoji: ':warning:'
+        title: '{{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Severity:* `{{ .Labels.severity }}`
+          *Component:* `{{ .Labels.component }}`
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+
+  - name: 'critical-all-channels'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#barber-alerts-critical'
+        username: 'Barber Alertmanager [CRITICAL]'
+        icon_emoji: ':rotating_light:'
+        color: 'danger'
+        title: '🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }}'
+        text: |
+          *ATENÇÃO: Alerta crítico requer ação imediata!*
+
+          {{ range .Alerts }}
+          *Component:* `{{ .Labels.component }}`
+          *Job:* `{{ .Labels.job }}`
+          *Instance:* `{{ .Labels.instance }}`
+
+          {{ .Annotations.summary }}
+
+          *Detalhes:*
+          {{ .Annotations.description }}
+
+          *Runbook:* {{ .Annotations.runbook_url }}
+          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+          {{ end }}
+        send_resolved: true
+
+    email_configs:
+      - to: 'devops@barberanalytics.com.br,cto@barberanalytics.com.br'
+        from: 'alerts@barberanalytics.com.br'
+        headers:
+          Subject: '🚨 [CRITICAL] Barber Analytics - {{ .GroupLabels.alertname }}'
+        html: |
+          <html>
+          <body style="font-family: Arial, sans-serif;">
+            <h2 style="color: #d9534f;">🚨 CRITICAL ALERT</h2>
+            {{ range .Alerts }}
+            <div style="background: #f8d7da; padding: 15px; border-left: 4px solid #d9534f; margin: 10px 0;">
+              <h3>{{ .Annotations.summary }}</h3>
+              <p><strong>Component:</strong> {{ .Labels.component }}</p>
+              <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+              <p><strong>Time:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}</p>
+              <hr>
+              <pre style="white-space: pre-wrap;">{{ .Annotations.description }}</pre>
+              <p><a href="{{ .Annotations.runbook_url }}" style="color: #0066cc;">View Runbook →</a></p>
+            </div>
+            {{ end }}
+          </body>
+          </html>
+        send_resolved: true
+
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: 'HTML'
+        message: |
+          <b>🚨 CRITICAL ALERT</b>
+
+          {{ range .Alerts }}
+          <b>{{ .Annotations.summary }}</b>
+
+          Component: <code>{{ .Labels.component }}</code>
+          Severity: <code>{{ .Labels.severity }}</code>
+
+          {{ .Annotations.description }}
+
+          <a href="{{ .Annotations.runbook_url }}">Runbook</a>
+          {{ end }}
+        send_resolved: true
+
+  - name: 'warning-slack'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#barber-alerts'
+        username: 'Barber Alertmanager [WARNING]'
+        icon_emoji: ':warning:'
+        color: 'warning'
+        title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Component:* `{{ .Labels.component }}`
+          *Summary:* {{ .Annotations.summary }}
+
+          {{ .Annotations.description }}
+
+          *Runbook:* {{ .Annotations.runbook_url }}
+          {{ end }}
+        send_resolved: true
+
+  - name: 'database-team'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL_DB_TEAM}'
+        channel: '#database-alerts'
+        username: 'Database Alertmanager'
+        icon_emoji: ':database:'
+        title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Severity:* `{{ .Labels.severity }}`
+          *Summary:* {{ .Annotations.summary }}
+
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+  - name: 'backend-team-slack'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#backend-alerts'
+        username: 'Backend Alertmanager'
+        icon_emoji: ':robot_face:'
+        title: '⚙️ Backend Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Severity:* `{{ .Labels.severity }}`
+          *Summary:* {{ .Annotations.summary }}
+
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+# ==============================================================================
+# INHIBITION RULES (Suprimir alertas redundantes)
+# ==============================================================================
+inhibit_rules:
+  # Se serviço está completamente down, suprimir alertas de latência/errors
+  - source_match:
+      alertname: 'ServiceCompletelyDown'
+    target_match_re:
+      alertname: '(HighLatencyP95|HighErrorRate|HighDatabaseConnections)'
+    equal: ['job', 'instance']
+
+  # Se há alto uso de conexões DB, suprimir alertas de queries lentas
+  - source_match:
+      alertname: 'DatabaseConnectionsExhausted'
+    target_match:
+      alertname: 'SlowDatabaseQueries'
+    equal: ['job']
+
+  # Se há alta taxa de erro, suprimir alertas de latência (já sabemos que está ruim)
+  - source_match:
+      alertname: 'HighErrorRate'
+    target_match:
+      alertname: 'HighLatencyP95'
+    equal: ['job', 'instance']

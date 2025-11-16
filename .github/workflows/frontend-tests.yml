@@ -1,0 +1,211 @@
+name: Frontend Tests
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-tests.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  unit-tests:
+    name: Unit & Accessibility Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
+      - name: Run accessibility tests
+        run: pnpm test:a11y
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: backend/go.sum
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Start Backend Server
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          PORT: 8080
+          ENV: test
+          JWT_PRIVATE_KEY_PATH: ./keys/private.pem
+          JWT_PUBLIC_KEY_PATH: ./keys/public.pem
+        run: |
+          echo "📦 Installing Go dependencies..."
+          go mod download
+
+          echo "🔑 Generating JWT keys for tests..."
+          mkdir -p keys
+          openssl genrsa -out keys/private.pem 2048
+          openssl rsa -in keys/private.pem -pubout -out keys/public.pem
+
+          echo "🗄️ Running database migrations..."
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          migrate -path migrations -database "$DATABASE_URL" up || echo "Migrations already applied"
+
+          echo "🌱 Seeding test data..."
+          go run scripts/seed_test_data.go
+
+          echo "🚀 Starting backend server..."
+          nohup go run cmd/api/main.go > backend.log 2>&1 &
+          echo $! > backend.pid
+
+          echo "⏳ Waiting for backend to be ready..."
+          timeout 30 bash -c 'until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done'
+
+          echo "✅ Backend is ready!"
+          curl http://localhost:8080/health
+
+      - name: Run E2E tests
+        env:
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL || 'qa@barberpro.dev' }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD || 'Test@1234' }}
+          E2E_TENANT_ID: e2e00000-0000-0000-0000-000000000001
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+          BACKEND_HEALTH_URL: http://localhost:8080/health
+          E2E_SCREENSHOTS: true
+          E2E_VIDEOS: true
+        run: pnpm test:e2e
+
+      - name: Stop Backend Server
+        if: always()
+        working-directory: backend
+        run: |
+          if [ -f backend.pid ]; then
+            echo "🛑 Stopping backend server..."
+            kill $(cat backend.pid) || true
+            rm backend.pid
+          fi
+
+      - name: Upload Backend Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-logs
+          path: backend/backend.log
+          retention-days: 7
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: frontend/test-results/
+          retention-days: 7
+
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.event_name == 'pull_request'
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate coverage report
+        run: pnpm test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false

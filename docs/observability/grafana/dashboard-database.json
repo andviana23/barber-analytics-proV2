@@ -1,0 +1,325 @@
+{
+  "dashboard": {
+    "title": "Barber Analytics - Database",
+    "tags": ["barber-analytics", "database", "postgresql"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Database Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "db_connections_open",
+            "legendFormat": "Total Open",
+            "refId": "A"
+          },
+          {
+            "expr": "db_connections_in_use",
+            "legendFormat": "In Use (Active)",
+            "refId": "B"
+          },
+          {
+            "expr": "db_connections_idle",
+            "legendFormat": "Idle",
+            "refId": "C"
+          },
+          {
+            "expr": "db_connections_waiting",
+            "legendFormat": "Waiting",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Connections"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [20],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Database Connections",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 2,
+        "title": "Connection Pool Stats",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "db_connections_open",
+            "legendFormat": "Open",
+            "refId": "A"
+          },
+          {
+            "expr": "db_connections_in_use",
+            "legendFormat": "In Use",
+            "refId": "B"
+          },
+          {
+            "expr": "db_connections_idle",
+            "legendFormat": "Idle",
+            "refId": "C"
+          },
+          {
+            "expr": "db_connections_waiting",
+            "legendFormat": "Waiting",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 15, "color": "yellow" },
+                { "value": 20, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Query Count by Operation",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(db_queries_total[5m])) by (operation)",
+            "legendFormat": "{{operation}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Queries/sec"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Query Count by Table",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(db_queries_total[5m])) by (table))",
+            "legendFormat": "{{table}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Queries/sec"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Query Duration - p50 / p95 / p99",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(db_queries_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p50 (median)",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(db_queries_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(db_queries_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration (seconds)"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [1],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["C", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Slow Queries (>1s)",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 6,
+        "title": "Slow Queries (>1s) by Table",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(20, sum(rate(db_queries_duration_seconds_bucket{le=\"+Inf\"}[5m])) by (table) - sum(rate(db_queries_duration_seconds_bucket{le=\"1.0\"}[5m])) by (table))",
+            "legendFormat": "{{table}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "instance": true,
+                "job": true
+              },
+              "renameByName": {
+                "table": "Table Name",
+                "Value": "Slow Queries/sec (>1s)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Query Duration by Operation",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(db_queries_duration_seconds_bucket[5m])) by (operation, le))",
+            "legendFormat": "{{operation}} - p95",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration (seconds)"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Query Duration Heatmap",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(db_queries_duration_seconds_bucket[5m])) by (le)",
+            "legendFormat": "Duration Distribution",
+            "refId": "A",
+            "format": "heatmap"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        },
+        "dataFormat": "tsbuckets",
+        "yAxis": {
+          "format": "s",
+          "decimals": 3
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["10s", "30s", "1m", "5m", "15m"]
+    }
+  }
+}

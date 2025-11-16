@@ -1,0 +1,278 @@
+{
+  "dashboard": {
+    "title": "Barber Analytics - Backend Performance",
+    "tags": ["barber-analytics", "backend", "performance"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Latency - p50 / p95 / p99",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"barber-backend\"}[5m])) by (le))",
+            "legendFormat": "p50 (median)",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"barber-backend\"}[5m])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"barber-backend\"}[5m])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Latency (seconds)"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.5],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["B", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Latency Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 2,
+        "title": "Throughput (req/s)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{job=\"barber-backend\"}[5m]))",
+            "legendFormat": "Total req/s",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{job=\"barber-backend\",status=~\"2..\"}[5m]))",
+            "legendFormat": "2xx (success)",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{job=\"barber-backend\",status=~\"4..\"}[5m]))",
+            "legendFormat": "4xx (client error)",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{job=\"barber-backend\",status=~\"5..\"}[5m]))",
+            "legendFormat": "5xx (server error)",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "In-Flight Requests",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "http_requests_in_flight{job=\"barber-backend\"}",
+            "legendFormat": "Concurrent Requests",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 8
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Requests"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Response Size Distribution",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_response_size_bytes_bucket{job=\"barber-backend\"}[5m])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_response_size_bytes_bucket{job=\"barber-backend\"}[5m])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_response_size_bytes_bucket{job=\"barber-backend\"}[5m])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 8
+        },
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "Size"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Memory Usage (Go Runtime)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "go_memstats_alloc_bytes{job=\"barber-backend\"}",
+            "legendFormat": "Allocated Memory",
+            "refId": "A"
+          },
+          {
+            "expr": "go_memstats_heap_inuse_bytes{job=\"barber-backend\"}",
+            "legendFormat": "Heap In Use",
+            "refId": "B"
+          },
+          {
+            "expr": "go_memstats_stack_inuse_bytes{job=\"barber-backend\"}",
+            "legendFormat": "Stack In Use",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 8
+        },
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "Memory"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Goroutines",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "go_goroutines{job=\"barber-backend\"}",
+            "legendFormat": "Active Goroutines",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 14
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Count"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "GC Pause Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(go_gc_duration_seconds_sum{job=\"barber-backend\"}[5m]) / rate(go_gc_duration_seconds_count{job=\"barber-backend\"}[5m])",
+            "legendFormat": "Avg GC Pause",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 14
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Latency Heatmap by Endpoint",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(http_request_duration_seconds_bucket{job=\"barber-backend\"}[5m])) by (endpoint, le)",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A",
+            "format": "heatmap"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 20
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+    }
+  }
+}

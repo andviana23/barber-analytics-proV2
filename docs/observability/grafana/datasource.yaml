@@ -1,0 +1,16 @@
+# Grafana Datasource Configuration for Barber Analytics Pro
+# Este arquivo configura a conexão do Grafana com o Prometheus
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://localhost:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: POST
+    version: 1

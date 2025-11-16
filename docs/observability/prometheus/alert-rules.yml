@@ -1,0 +1,344 @@
+# Prometheus Alert Rules - Barber Analytics Pro
+# Regras de alerta para monitoramento de SLA, performance e disponibilidade
+
+groups:
+  # ==============================================================================
+  # GRUPO 1: UPTIME & AVAILABILITY
+  # ==============================================================================
+  - name: uptime_alerts
+    interval: 5m
+    rules:
+      - alert: ServiceDowntime
+        expr: avg_over_time(up{job="barber-backend"}[24h]) < 0.995
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+          team: devops
+        annotations:
+          summary: "🔴 CRITICAL: Barber Analytics com uptime < 99.5% (24h)"
+          description: |
+            O uptime do serviço está abaixo de 99.5% nas últimas 24 horas.
+
+            Valor atual: {{ $value | humanizePercentage }}
+            Threshold: 99.5%
+            Job: {{ $labels.job }}
+            Instance: {{ $labels.instance }}
+
+            Ação imediata necessária! Verificar logs e infraestrutura.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/uptime-degradation"
+
+      - alert: ServiceCompletelyDown
+        expr: up{job="barber-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: backend
+          team: devops
+        annotations:
+          summary: "🚨 EMERGÊNCIA: Serviço completamente fora do ar!"
+          description: |
+            O backend do Barber Analytics está COMPLETAMENTE FORA DO AR!
+
+            Job: {{ $labels.job }}
+            Instance: {{ $labels.instance }}
+
+            AÇÃO IMEDIATA: Verificar servidor, processo PM2, e infraestrutura.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/service-down"
+
+  # ==============================================================================
+  # GRUPO 2: LATENCY & PERFORMANCE
+  # ==============================================================================
+  - name: latency_alerts
+    interval: 1m
+    rules:
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="barber-backend"}[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+          team: backend
+        annotations:
+          summary: "⚠️ WARNING: Latência p95 acima de 500ms (5 min)"
+          description: |
+            A latência p95 das requisições HTTP está acima do threshold por mais de 5 minutos.
+
+            Valor atual: {{ $value | humanizeDuration }}
+            Threshold: 500ms
+            Job: {{ $labels.job }}
+
+            Possíveis causas:
+            - Queries lentas no banco de dados
+            - Alto volume de requisições simultâneas
+            - Recursos insuficientes (CPU/memória)
+            - N+1 queries não otimizadas
+
+            Verificar dashboard Backend Performance no Grafana.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/high-latency"
+
+      - alert: HighLatencyP99
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job="barber-backend"}[5m])) by (le)) > 1.0
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+          team: backend
+        annotations:
+          summary: "🔴 CRITICAL: Latência p99 acima de 1s (5 min)"
+          description: |
+            A latência p99 está acima de 1 segundo por mais de 5 minutos!
+
+            Valor atual: {{ $value | humanizeDuration }}
+            Threshold: 1s
+
+            Isso afeta negativamente a experiência de 1% dos usuários.
+            Requer investigação imediata!
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/critical-latency"
+
+  # ==============================================================================
+  # GRUPO 3: ERROR RATE
+  # ==============================================================================
+  - name: error_rate_alerts
+    interval: 1m
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="barber-backend",status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="barber-backend"}[5m]))
+          > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+          team: backend
+        annotations:
+          summary: "🔴 CRITICAL: Taxa de erro 5xx acima de 1% (5 min)"
+          description: |
+            A taxa de erros 5xx está acima de 1% por mais de 5 minutos!
+
+            Taxa atual: {{ $value | humanizePercentage }}
+            Threshold: 1%
+            Job: {{ $labels.job }}
+
+            Possíveis causas:
+            - Bugs recentes em deploy
+            - Banco de dados inacessível
+            - Serviços externos fora do ar (Asaas, etc)
+            - Memory leak causando crashes
+
+            AÇÃO IMEDIATA: Verificar logs do backend e considerar rollback.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/high-error-rate"
+
+      - alert: High4xxErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="barber-backend",status=~"4.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="barber-backend"}[5m]))
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+          team: backend
+        annotations:
+          summary: "⚠️ WARNING: Taxa de erro 4xx acima de 5% (10 min)"
+          description: |
+            A taxa de erros 4xx está acima de 5% por mais de 10 minutos.
+
+            Taxa atual: {{ $value | humanizePercentage }}
+            Threshold: 5%
+
+            Possíveis causas:
+            - Alterações recentes na API quebrando contratos
+            - Problemas de autenticação/autorização
+            - Validação de entrada muito restritiva
+            - Clients antigos fazendo requisições inválidas
+
+            Analisar logs para identificar endpoints problemáticos.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/client-errors"
+
+  # ==============================================================================
+  # GRUPO 4: CRON JOBS
+  # ==============================================================================
+  - name: cron_alerts
+    interval: 5m
+    rules:
+      - alert: CronNotExecuted
+        expr: (time() - cron_last_success_timestamp) > 90000
+        for: 1m
+        labels:
+          severity: critical
+          component: scheduler
+          team: backend
+        annotations:
+          summary: "🔴 CRITICAL: Cron job não executou em 25+ horas"
+          description: |
+            O job {{ $labels.job_name }} não executou com sucesso nas últimas 25 horas!
+
+            Job: {{ $labels.job_name }}
+            Última execução: {{ $value | humanizeDuration }} atrás
+            Threshold: 25 horas
+
+            Possíveis causas:
+            - Scheduler travado/parado
+            - Job falhando silenciosamente
+            - Dependências externas indisponíveis
+            - Timeout excessivo
+
+            Verificar logs do scheduler e dashboard Cron Jobs no Grafana.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/cron-failure"
+
+      - alert: CronHighFailureRate
+        expr: |
+          sum(rate(cron_executions_total{status="failed"}[1h])) by (job_name)
+          /
+          sum(rate(cron_executions_total[1h])) by (job_name)
+          > 0.1
+        for: 30m
+        labels:
+          severity: warning
+          component: scheduler
+          team: backend
+        annotations:
+          summary: "⚠️ WARNING: Alta taxa de falha em cron job (10%+ em 1h)"
+          description: |
+            O job {{ $labels.job_name }} está falhando em mais de 10% das execuções na última hora.
+
+            Job: {{ $labels.job_name }}
+            Taxa de falha: {{ $value | humanizePercentage }}
+
+            Investigar causa raiz antes que se torne crítico.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/cron-degradation"
+
+  # ==============================================================================
+  # GRUPO 5: DATABASE
+  # ==============================================================================
+  - name: database_alerts
+    interval: 1m
+    rules:
+      - alert: HighDatabaseConnections
+        expr: db_connections_in_use > 20
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          team: backend
+        annotations:
+          summary: "⚠️ WARNING: Conexões ativas do banco acima de 20 (5 min)"
+          description: |
+            O número de conexões ativas do PostgreSQL está acima do threshold.
+
+            Conexões ativas: {{ $value }}
+            Threshold: 20
+
+            Possíveis causas:
+            - Alto volume de tráfego
+            - Connection leak (conexões não sendo fechadas)
+            - Queries lentas bloqueando conexões
+            - Pool size insuficiente
+
+            Verificar dashboard Database no Grafana e logs de queries.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/high-db-connections"
+
+      - alert: DatabaseConnectionsExhausted
+        expr: db_connections_waiting > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+          team: backend
+        annotations:
+          summary: "🔴 CRITICAL: Pool de conexões do banco esgotado!"
+          description: |
+            Há {{ $value }} requisições aguardando conexões disponíveis!
+
+            Conexões esperando: {{ $value }}
+            Conexões abertas: {{ with query "db_connections_open" }}{{ . | first | value }}{{ end }}
+            Conexões em uso: {{ with query "db_connections_in_use" }}{{ . | first | value }}{{ end }}
+
+            Isto causa timeouts e degradação severa do serviço!
+
+            AÇÃO IMEDIATA:
+            1. Identificar queries lentas bloqueando conexões
+            2. Considerar aumentar pool size
+            3. Verificar connection leaks no código
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/db-pool-exhausted"
+
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.99, sum(rate(db_queries_duration_seconds_bucket[5m])) by (le)) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+          team: backend
+        annotations:
+          summary: "⚠️ WARNING: Queries lentas no banco (p99 > 1s em 10 min)"
+          description: |
+            O percentil 99 da duração das queries está acima de 1 segundo.
+
+            Duração p99: {{ $value | humanizeDuration }}
+            Threshold: 1s
+
+            Possíveis causas:
+            - Falta de índices estratégicos
+            - N+1 queries
+            - Tabelas com muitos dados sem particionamento
+            - Lock contention
+
+            Executar EXPLAIN ANALYZE nas queries mais lentas.
+            Verificar dashboard Database → Slow Queries no Grafana.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/slow-queries"
+
+  # ==============================================================================
+  # GRUPO 6: RESOURCES
+  # ==============================================================================
+  - name: resource_alerts
+    interval: 1m
+    rules:
+      - alert: HighMemoryUsage
+        expr: go_memstats_heap_inuse_bytes{job="barber-backend"} > 500000000
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+          team: backend
+        annotations:
+          summary: "⚠️ WARNING: Uso de memória heap acima de 500MB (10 min)"
+          description: |
+            O uso de memória heap do backend está alto.
+
+            Heap em uso: {{ $value | humanize1024 }}B
+            Threshold: 500MB
+
+            Possíveis causas:
+            - Memory leak
+            - Caching excessivo em memória
+            - Processamento de dados muito grandes
+
+            Monitorar se continua crescendo (possível leak).
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/high-memory"
+
+      - alert: HighGoroutineCount
+        expr: go_goroutines{job="barber-backend"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+          team: backend
+        annotations:
+          summary: "⚠️ WARNING: Número de goroutines acima de 1000 (5 min)"
+          description: |
+            O número de goroutines ativas está alto.
+
+            Goroutines: {{ $value }}
+            Threshold: 1000
+
+            Possíveis causas:
+            - Goroutine leak (goroutines não finalizando)
+            - Alto volume de requisições concorrentes
+            - Operações assíncronas não gerenciadas corretamente
+
+            Analisar goroutine profiles com pprof.
+          runbook_url: "https://docs.barberanalytics.com.br/runbooks/goroutine-leak"

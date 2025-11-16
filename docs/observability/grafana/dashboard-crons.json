@@ -1,0 +1,263 @@
+{
+  "dashboard": {
+    "title": "Barber Analytics - Cron Jobs",
+    "tags": ["barber-analytics", "crons", "jobs"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "1m",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Last Execution Time (by Job)",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "cron_last_success_timestamp",
+            "legendFormat": "{{job_name}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "instance": true,
+                "job": true
+              },
+              "indexByName": {},
+              "renameByName": {
+                "job_name": "Job Name",
+                "Value": "Last Success (Unix Timestamp)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Cron Execution Status (5m)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(cron_executions_total{status=\"success\"}[5m]))",
+            "legendFormat": "Success",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(cron_executions_total{status=\"failed\"}[5m]))",
+            "legendFormat": "Failed",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 1, "color": "red" }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": { "id": "byName", "options": "Failed" },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": { "mode": "fixed", "fixedColor": "red" }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "title": "Execution Duration (Avg by Job)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(cron_execution_duration_seconds_bucket[5m])) by (job_name, le))",
+            "legendFormat": "{{job_name}} - p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(cron_execution_duration_seconds_bucket[5m])) by (job_name, le))",
+            "legendFormat": "{{job_name}} - p95",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration (seconds)"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Cron Executions Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(cron_executions_total[5m])) by (job_name)",
+            "legendFormat": "{{job_name}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Executions/sec"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Failed Executions (Last 24h)",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(20, sum(increase(cron_executions_total{status=\"failed\"}[24h])) by (job_name))",
+            "legendFormat": "{{job_name}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "instance": true,
+                "job": true,
+                "status": true
+              },
+              "renameByName": {
+                "job_name": "Job Name",
+                "Value": "Failed Count (24h)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Duration Heatmap (All Jobs)",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(cron_execution_duration_seconds_bucket[5m])) by (le)",
+            "legendFormat": "Duration Distribution",
+            "refId": "A",
+            "format": "heatmap"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        },
+        "dataFormat": "tsbuckets",
+        "yAxis": {
+          "format": "s"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Jobs Not Executed in Last 25 Hours (ALERT)",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "(time() - cron_last_success_timestamp) > 90000",
+            "legendFormat": "{{job_name}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "renameByName": {
+                "job_name": "⚠️ Job Name (Missing Execution)",
+                "Value": "Hours Since Last Success"
+              }
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "cellOptions": {
+                "type": "color-background"
+              }
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["30s", "1m", "5m", "15m", "30m", "1h"]
+    }
+  }
+}

@@ -1,0 +1,59 @@
+# Prometheus Configuration for Barber Analytics Pro
+# Este arquivo configura o Prometheus para coletar métricas do backend
+
+global:
+  scrape_interval: 15s # Intervalo padrão para coleta de métricas
+  evaluation_interval: 15s # Intervalo de avaliação de regras
+
+  # Labels externos anexados a todas as métricas/alertas enviados a sistemas externos
+  external_labels:
+    cluster: 'barber-analytics'
+    env: 'development'
+
+# Configuração de Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - 'localhost:9093'
+
+# Carregar regras de alerta
+rule_files:
+  - "docs/observability/prometheus/alert-rules.yml"
+
+# Configuração de scrape
+scrape_configs:
+  # Job 1: Backend API (Go)
+  - job_name: 'barber-backend'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+
+    static_configs:
+      - targets: ['localhost:8080']
+        labels:
+          service: 'barber-api'
+          component: 'backend'
+
+    # Relabel para adicionar contexto adicional
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'barber-backend-1'
+
+  # Job 2: Prometheus self-monitoring
+  - job_name: 'prometheus'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          component: 'monitoring'
+
+# Configurações de armazenamento (opcional - para produção)
+# storage:
+#   tsdb:
+#     path: /prometheus/data
+#     retention:
+#       time: 30d
+#       size: 50GB
