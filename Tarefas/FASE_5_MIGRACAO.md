@@ -1,9 +1,9 @@
-# 🟦 FASE 5 — Migração Progressiva do MVP 1.0
+# 🟦 FASE 5 — Preparação para Produção (V2 Standalone)
 
-**Objetivo:** Desativar gradualmente MVP 1.0, migrar para v2
-**Duração:** 14-28 dias
+**Objetivo:** Preparar V2 para rodar em produção de forma independente (sem MVP)
+**Duração:** 7-14 dias
 **Dependências:** ✅ Fase 3 + Fase 4 completas
-**Sprint:** Sprint 7-9
+**Sprint:** Sprint 7-8
 
 ---
 
@@ -11,251 +11,209 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  FASE 5: MIGRAÇÃO PROGRESSIVA MVP 1.0 → V2                  │
+│  FASE 5: PREPARAÇÃO PARA PRODUÇÃO V2                        │
 ├─────────────────────────────────────────────────────────────┤
-│  Progresso:  ██████████████░░░░░░  70% (2.8/4 concluídas)  │
-│  Status:     🟡 EM PROGRESSO (ESTRATÉGIA SIMPLIFICADA)     │
+│  Progresso:  ██████████░░░░░░░░░░░░  50% (2/4 concluídas)   │
+│  Status:     🚀 EM ANDAMENTO                                │
 │  Prioridade: 🔴 ALTA                                        │
-│  Estimativa: 20 horas (14h concluídas, 6h restantes)        │
-│  Sprint:     Sprint 7-9                                     │
-│  Mudança:    ⚠️  SEM DUAL-READ - APENAS V2                 │
+│  Estimativa: 16 horas (8h gastas)                          │
+│  Sprint:     Sprint 7-8                                     │
+│  Abordagem:  🆕 V2 STANDALONE (sem migração de dados)      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
+## ⚠️ **IMPORTANTE: ESTRATÉGIA SEM MIGRAÇÃO**
+
+**Decisão:** O V2 **NÃO** migrará dados do MVP 1.0.
+
+- ✅ V2 inicia com banco de dados limpo (apenas estrutura)
+- ✅ Novos clientes começam direto no V2
+- ✅ Clientes existentes continuam no MVP 1.0 (ou migram manualmente se desejarem)
+- ❌ Sem dual-read (MVP + V2 ao mesmo tempo)
+- ❌ Sem scripts de migração automática de dados
+
+---
+
 ## ✅ Checklist de Tarefas
 
-### 🔴 T-INFRA-015 — Feature flags (Beta mode)
-- **Responsável:** DevOps / Backend
+### ✅ T-PROD-001 — Seed de Dados Iniciais
+
+- **Responsável:** Backend / DevOps
 - **Prioridade:** 🔴 Alta
 - **Estimativa:** 4h
 - **Sprint:** Sprint 7
-- **Status:** ✅ 100% CONCLUÍDO
-- **Deliverable:** Sistema de feature flags por tenant
+- **Status:** ✅ Concluído (17/11/2025)
+- **Horas Gastas:** 4h
+- **Deliverable:** Scripts de seed para dados essenciais do sistema
 
 #### Critérios de Aceitação
-- [x] Tabela `feature_flags` criada (migration 011)
-  - [x] tenant_id, feature, enabled, created_at, updated_at
-  - [x] Unique index (tenant_id, feature)
-- [x] Repository PostgresFeatureFlagRepository conectado
-- [x] Usecases: ListFeatureFlags, SetFeatureFlag, CheckFeatureFlag
-- [x] Middleware FeatureFlagMiddleware implementado
-- [x] Exemplo: `use_v2_financial = true/false` por tenant
-- [x] Admin endpoint: `PATCH /admin/feature-flags` + GET
-- [x] Public endpoint: `GET /api/v1/feature-flags`
-- [x] Seed script: `backend/scripts/sql/seed_feature_flags.sql`
-- [x] Documentação: `docs/FEATURE_FLAGS_API.md`
-- [x] Migration guide: `backend/scripts/MIGRATION_GUIDE.md`
-- [x] Testes unitários: CheckFeatureFlagUseCase (6/6 passing)
-- [x] Migration 011 aplicada em banco Neon
-- [x] Seeds executados (3 flags por tenant, todos disabled)
-- [x] Middleware aplicado nas rotas financeiras e assinaturas
-- [x] Backend compilando sem erros
-- [x] Validação via @pgsql: flags criadas para tenant E2E
-- [ ] Frontend consome feature flags (provider criado, integração pending)
-- [ ] Validação em staging com flag habilitada/desabilitada
 
-**Files Created/Modified:**
-- ✅ `backend/migrations/011_create_feature_flags.{up,down}.sql`
-- ✅ `backend/internal/infrastructure/repository/postgres_feature_flag_repository.go`
-- ✅ `backend/internal/application/usecase/featureflag/*.go` (3 usecases)
-- ✅ `backend/internal/infrastructure/http/handler/feature_flag_handler.go`
-- ✅ `backend/internal/infrastructure/http/middleware/feature_flag_middleware.go`
-- ✅ `backend/cmd/api/main.go` (feature flag integration)
-- ✅ `backend/scripts/sql/seed_feature_flags.sql`
-- ✅ `backend/scripts/sql/migrate_mvp_to_v2.sql`
-- ✅ `backend/scripts/MIGRATION_GUIDE.md`
-- ✅ `docs/FEATURE_FLAGS_API.md`
-- ✅ `backend/tests/unit/usecase/featureflag/check_feature_flag_usecase_test.go`
-
-**Backend API Ready:**
-```bash
-# Listar flags do tenant
-curl -H "X-Tenant-ID: e2e00000-0000-0000-0000-000000000001" \
-  http://localhost:8080/api/v1/feature-flags
-
-# Habilitar flag (admin)
-curl -X PATCH http://localhost:8080/api/v1/admin/feature-flags \
-  -H "Content-Type: application/json" \
-  -d '{"tenant_id": "...", "feature": "use_v2_financial", "enabled": true}'
-```
-
-### 🟡 T-FE-013 — Integração Feature Flags (SIMPLIFICADO - APENAS V2)
-- **Responsável:** Frontend
-- **Prioridade:** 🟡 Média
-- **Estimativa:** 2h (simplificado)
-- **Sprint:** Sprint 8
-- **Status:** ✅ 80% CONCLUÍDO (hooks criados, implementação pending)
-- **Deliverable:** Frontend verifica flags e protege rotas v2
-
-#### ⚠️ MUDANÇA DE ESTRATÉGIA
-**NÃO haverá dual-read (MVP + v2).**
-**Decisão:** Usar apenas v2. Feature flags controlam **acesso**, não **fonte de dados**.
-
-#### Critérios de Aceitação (SIMPLIFICADOS)
-- [x] Hook `useFeatureFlags` criado e documentado
-- [x] Hook `useFeature` para verificação simples
-- [x] Provider `FeatureFlagsProvider` criado
-- [ ] Frontend verifica feature flag `use_v2_financial`
-- [ ] Se `false`: Exibir mensagem "Feature não disponível para seu tenant"
-- [ ] Se `true`: Renderizar normalmente (sempre lendo de v2)
-- [ ] Adicionar badge "v2.0" nas páginas protegidas
-- [ ] ValidationDashboard simplificado (apenas verificar se API v2 responde)
-
-**Fluxo Simplificado:**
-```tsx
-function ReceitasPage() {
-  const { enabled, isLoading } = useFeature('use_v2_financial');
-
-  if (isLoading) return <Loading />;
-
-  if (!enabled) {
-    return (
-      <Alert severity="warning">
-        O módulo Financeiro v2 não está disponível para seu tenant.
-        Entre em contato com o suporte.
-      </Alert>
-    );
-  }
-
-  // Sempre lê de v2 (useReceitas já aponta para /api/v1/receitas)
-  return <ReceitasV2View />;
-}
-```
+- [x] Script `seed_categories.sql` - Categorias padrão de receitas e despesas
+  - [x] Categorias de Receita: Serviços, Produtos, Assinaturas, Outros
+  - [x] Categorias de Despesa: Salários, Aluguel, Fornecedores, Impostos, Marketing, Outros
+- [x] Script `seed_plans.sql` - Planos de assinatura padrão (Clube do Trato)
+  - [x] Plano Básico, Intermediário, Premium
+- [x] Script `seed_demo_tenant.sql` - Tenant de demonstração com dados de exemplo
+  - [x] 1 tenant demo
+  - [x] 2 usuários (admin + barbeiro)
+  - [x] 11 categorias (4 receita + 7 despesa)
+  - [x] 3 planos de assinatura
+  - [x] 10 receitas de exemplo
+  - [x] 10 despesas de exemplo
+  - [x] 3 assinaturas de exemplo
+- [x] Documentação: `backend/scripts/SEED_GUIDE.md`
+- [x] Programa Go: `backend/cmd/seed/main.go`
+- [x] Comandos make: `make seed-demo`, `make seed-prod`, `make seed-clean`, `make seed-verify`
 
 **Files Created:**
-- ✅ `frontend/app/lib/hooks/useFeatureFlags.ts`
-- ✅ `frontend/app/lib/providers/FeatureFlagsProvider.tsx`
-- ⏳ `frontend/app/components/FeatureGate.tsx` (componente protetor)
 
-**Próximos Passos:**
-1. ~~Criar client Supabase~~ ❌ NÃO NECESSÁRIO
-2. ~~Adaptar hooks para dual-read~~ ❌ NÃO NECESSÁRIO
-3. ✅ Adicionar `<FeatureFlagsProvider>` no layout privado
-4. ✅ Criar componente `<FeatureGate>` para proteger páginas
-5. ✅ Adicionar badges "v2.0" nas páginas
-6. ✅ ValidationDashboard simplificado (apenas health check v2)
-7. ✅ Testes e2e com toggle ON/OFF
+- ✅ `backend/scripts/sql/seed_categories.sql` (11 categorias com cores do Design System)
+- ✅ `backend/scripts/sql/seed_plans.sql` (3 planos: Básico R$59.90, Intermediário R$89.90, Premium R$129.90)
+- ✅ `backend/scripts/sql/seed_demo_tenant.sql` (tenant completo + usuários + dados de exemplo)
+- ✅ `backend/scripts/SEED_GUIDE.md` (documentação completa com troubleshooting)
+- ✅ `backend/cmd/seed/main.go` (programa Go com flags --mode e --tenant-id)
+- ✅ `backend/Makefile` (seção ##@ Seeds com 6 comandos)
 
 ---
 
-### 🔴 T-QA-004 — Testes de regressão
-- **Responsável:** QA
+### ✅ T-PROD-002 — Validação de Integridade
+
+- **Responsável:** QA / Backend
 - **Prioridade:** 🔴 Alta
-- **Estimativa:** 8h
+- **Estimativa:** 4h
+- **Sprint:** Sprint 7
+- **Status:** ✅ Concluído (17/11/2025)
+- **Deliverable:** Suite de validação de banco e APIs
+
+#### Critérios de Aceitação
+
+- [x] Script de validação de schema (`scripts/validate_schema.sh`)
+  - [x] Verifica tabelas core existem
+  - [x] Verifica índices essenciais
+  - [x] Verifica RLS em tabelas sensíveis (warning se ausente)
+  - [x] Verifica constraints críticas e migrations
+- [x] Health check endpoint completo (`GET /health`)
+  - [x] Database connection OK (ping + pool stats)
+  - [x] Migrations: versão mais recente (`schema_migrations`)
+  - [x] Redis: suporte previsto (retorna `not_configured` se indisponível)
+  - [x] External APIs: Asaas reachability
+- [x] Smoke tests E2E (`scripts/smoke_tests.sh`)
+  - [x] Criar tenant → OK
+  - [x] Criar usuário → OK
+  - [x] Login → OK
+  - [x] Criar receita → OK (com fallback de aviso se categoria não existir)
+  - [x] Listar receitas → OK
+- [x] Documentação: `VALIDATION_GUIDE.md` atualizada
+
+**Deliverables criados/ajustados:**
+
+- `scripts/validate_schema.sh`
+- `scripts/smoke_tests.sh`
+- `VALIDATION_GUIDE.md`
+- `backend/internal/infrastructure/http/handler/health.go` (melhorado)
+
+---
+
+### 🟡 T-PROD-003 — Onboarding Flow
+
+- **Responsável:** Frontend / Backend
+- **Prioridade:** 🟡 Média
+- **Estimativa:** 6h
+- **Sprint:** Sprint 8
+- **Status:** 🟡 Em andamento (Step 2 implementado, signup/primeiro acesso pendentes)
+- **Deliverable:** Fluxo de cadastro de novo tenant
+
+#### Critérios de Aceitação
+
+- [ ] Página `/signup` (cadastro de novo tenant)
+  - [ ] Form: Nome da barbearia, CNPJ, Email, Senha
+  - [ ] Validação: CNPJ válido, email único, senha forte
+  - [ ] Criação de tenant + primeiro usuário (OWNER)
+- [ ] Endpoint `POST /auth/signup`
+  - [ ] Cria tenant
+  - [ ] Cria primeiro usuário (role: OWNER)
+  - [ ] Envia email de boas-vindas (opcional)
+  - [ ] Retorna access_token e refresh_token
+- [ ] Página `/onboarding` (primeiro acesso)
+  - [ ] Tour guiado (opcional)
+  - [ ] Configurar categorias personalizadas
+  - [ ] Configurar planos de assinatura (se usar Clube do Trato)
+- [ ] Documentação: Tutorial de primeiro acesso
+
+**Notas de Progresso (20/11/2025):**
+
+- ✅ Step 2 do wizard de onboarding (configurações iniciais) implementado no frontend, utilizando `tenantConfigService` para persistir preferências.
+- ✅ Service/API ajustados para salvar `timezone`, `currency` e preferências padrão do tenant.
+- ⏳ Endpoint `POST /auth/signup`, autopreenchimento da jornada `/signup` e tela final de onboarding permanecem em desenvolvimento.
+
+**Files to Create:**
+
+- `frontend/app/(auth)/signup/page.tsx`
+- `frontend/app/(private)/onboarding/page.tsx`
+- `backend/internal/application/usecase/auth/signup_usecase.go`
+- `backend/internal/infrastructure/http/handler/auth_handler.go` (adicionar signup)
+- `docs/ONBOARDING_GUIDE.md`
+
+---
+
+### 🟡 T-PROD-004 — Documentação de Deploy
+
+- **Responsável:** DevOps
+- **Prioridade:** 🟡 Média
+- **Estimativa:** 2h
 - **Sprint:** Sprint 8
 - **Status:** ⏳ Não iniciado
-- **Deliverable:** Suite de testes de regressão
+- **Deliverable:** Guia completo de deploy em produção
 
 #### Critérios de Aceitação
-- [ ] Teste: Totais de receita/despesa batem (MVP vs v2)
-- [ ] Teste: Assinaturas ativas corretas
-- [ ] Teste: Cálculos de comissão corretos
-- [ ] Teste: Relatórios geram corretamente
-- [ ] Teste: Fluxo de caixa idêntico
-- [ ] Teste: E2E completo (login → dashboard → CRUD)
-- [ ] Relatório de diferenças (se houver)
 
----
+- [ ] `docs/DEPLOY_PRODUCTION.md` criado com:
+  - [ ] Checklist pré-deploy
+  - [ ] Variáveis de ambiente obrigatórias
+  - [ ] Comandos de deploy (backend + frontend)
+  - [ ] Verificação pós-deploy
+  - [ ] Procedimentos de rollback
+  - [ ] Monitoramento inicial (logs, métricas)
+- [ ] Scripts de deploy atualizados
+  - [ ] `scripts/deploy-backend.sh`
+  - [ ] `scripts/deploy-frontend.sh`
+- [ ] CI/CD pipeline validado
+  - [ ] GitHub Actions roda testes
+  - [ ] Deploy automático em staging
+  - [ ] Deploy manual em produção (aprovação)
 
-### 🟡 T-DOM-010 — Desativar MVP 1.0 (gradualmente)
-- **Responsável:** DevOps / Product
-- **Prioridade:** 🟡 Média
-- **Estimativa:** 4h
-- **Sprint:** Sprint 9
-- **Status:** ⏳ Não iniciado
-- **Deliverable:** Rollout gradual v2 para 100% dos tenants
+**Files to Create:**
 
-#### Critérios de Aceitação
-- [ ] **Semana 1:** 25% dos tenants usam v2
-  - [ ] Monitorar: errors, latência, feedback
-- [ ] **Semana 2:** 50% dos tenants usam v2
-  - [ ] Validar métricas
-- [ ] **Semana 3:** 75% dos tenants usam v2
-- [ ] **Semana 4:** 100% dos tenants usam v2
-- [ ] MVP 1.0 desativado (read-only por 30 dias)
-- [ ] Comunicação aos usuários
+- `docs/DEPLOY_PRODUCTION.md`
+- `scripts/deploy-backend.sh`
+- `scripts/deploy-frontend.sh`
+- `.github/workflows/deploy-production.yml`
 
 ---
 
 ## 📈 Métricas de Sucesso
 
 ### Fase 5 completa quando:
+
 - [ ] ✅ Todos os 4 tasks concluídos (100%)
-- [ ] ✅ MVP 1.0 e v2 rodando em paralelo
-- [ ] ✅ Feature flags controlam o acesso ao Financeiro v2
-- [ ] ✅ Beta phase completa e validada
-- [ ] ✅ 100% dos tenants migrados para v2
-- [ ] ✅ MVP 1.0 desativado (somente backup)
+- [ ] ✅ Seeds de dados essenciais criados
+- [ ] ✅ Validação de integridade passando
+- [ ] ✅ Onboarding flow funcional
+- [ ] ✅ Documentação de deploy completa
+- [ ] ✅ V2 pronto para receber primeiros clientes em produção
 
 ---
 
 ## 🎯 Deliverables da Fase 5
 
-| # | Deliverable | Status |
-|---|-------------|--------|
-| 1 | Feature flags sistema implementado | ✅ 100% CONCLUÍDO |
-| 2 | Integração frontend (simplificada) | 🟡 90% (provider + FeatureGate criados) |
-| 3 | Testes de regressão passando | ⏳ Pendente |
-| 4 | Rollout gradual concluído (100%) | ⏳ Pendente (playbook criado) |
-
----
-
-## 📝 Resumo de Progresso (15/11/2025 - ATUALIZADO)
-
-### ⚠️ MUDANÇA DE ESTRATÉGIA
-
-**Decisão:** **NÃO** usar dual-read (MVP + v2).
-**Novo fluxo:** Feature flags controlam apenas **acesso** às rotas v2, não fonte de dados.
-**Impacto:** Simplificou implementação de 4h → 2h (frontend).
-
-### ✅ Concluído Nesta Sessão
-
-#### Backend (T-INFRA-015) - 100%
-- ✅ Migration 011 aplicada via @pgsql no Neon
-- ✅ Seeds executados: 3 flags (financial, subscriptions, inventory) para tenant E2E
-- ✅ Middleware `FeatureFlagMiddleware` aplicado nas rotas:
-  - Financeiro v2: `/api/v1/receitas`, `/despesas`, `/fluxo-caixa`, `/dashboard`
-  - Assinaturas v2: `/api/v1/assinaturas`
-- ✅ Backend compilando sem erros
-- ✅ Teste manual: flags retornam corretamente via API
-
-#### Frontend (T-FE-013) - 90%
-- ✅ Hook `useFeatureFlags` e `useFeature` criados
-- ✅ Provider `FeatureFlagsProvider` criado (context global)
-- ✅ Componente `FeatureGate` criado (proteção de páginas)
-- ✅ Badge `V2Badge` para indicar versão
-- ✅ Hook `useMultipleFeatures` para verificar múltiplas flags
-- ✅ Arquivo `useDualRead.example.ts` **OBSOLETO** (estratégia descartada)
-
-#### DevOps (T-DOM-010) - 50%
-- ✅ Playbook de rollout criado (`backend/scripts/ROLLOUT_PLAYBOOK.md`):
-  - Cronograma 4 semanas (25% → 50% → 75% → 100%)
-  - Scripts de habilitação em massa
-  - Procedimentos de rollback (< 1min)
-  - Queries de validação
-  - Checklist de execução
-
-### ⏳ Pendente
-
-#### T-FE-013 (10% restante - ~1h)
-- [ ] Integrar `FeatureFlagsProvider` no layout privado (`app/(private)/layout.tsx`)
-- [ ] Envolver páginas principais com `<FeatureGate>`:
-  - ReceitasPage, DespesasPage, DashboardPage
-  - AssinaturasPage (com flag `use_v2_subscriptions`)
-- [ ] Adicionar `<V2Badge />` nos headers das páginas
-- [ ] Testar toggle manual: desabilitar flag → ver mensagem de indisponibilidade
-
-#### T-QA-004
-- [ ] Suite de testes de regressão
-- [ ] Validação de totais (MVP vs v2)
-- [ ] Testes de cálculos (comissões, fluxo de caixa, etc.)
-
-#### T-DOM-010
-- [ ] Rollout gradual (25% → 50% → 75% → 100%)
-- [ ] Monitoramento de métricas (errors, latência, feedback)
-- [ ] Desativação do MVP após 100% migrado
+| #   | Deliverable                                              | Status                    |
+| --- | -------------------------------------------------------- | ------------------------- |
+| 1   | Seeds de dados iniciais (categorias, planos, demo)       | ✅ Concluído (17/11/2025) |
+| 2   | Validação de integridade (schema + health + smoke tests) | ✅ Concluído (17/11/2025) |
+| 3   | Onboarding flow (signup + primeiro acesso)               | ⏳ Pendente               |
+| 4   | Documentação de deploy em produção                       | ⏳ Pendente               |
 
 ---
 
@@ -266,65 +224,123 @@ Após completar **100%** da Fase 5:
 👉 **Iniciar FASE 6 — Hardening** (`Tarefas/FASE_6_HARDENING.md`)
 
 **Resumo Fase 6:**
-- Segurança (rate limiting avançado, auditoria, RBAC)
+
+- Segurança (rate limiting avançado, auditoria, RBAC completo)
 - Observabilidade (Prometheus, Grafana, Sentry)
 - Performance (query optimization, caching Redis)
 - Compliance (LGPD, backup, DR)
+- Load testing e otimização
 
 ---
 
-## 📝 Plano de Rollout Detalhado
+## 📝 Notas de Implementação
 
-### Semana 1 — 25% dos tenants
-```
-Tenants selecionados:
-- Tenants com menor volume de dados
-- Tenants beta testers (voluntários)
-- Total: ~5-10 tenants
+### Seed de Categorias Padrão
 
-Monitoramento:
-- Errors: < 0.1%
-- Latência p95: < 500ms
-- Feedback: Positivo
+As categorias padrão devem cobrir os casos mais comuns de barbearias:
 
-Rollback: Se error rate > 1% → voltar para MVP
-```
+**Categorias de Receita:**
 
-### Semana 2 — 50% dos tenants
-```
-Adicionar:
-- Tenants de médio porte
-- Total acumulado: ~20-25 tenants
+- Serviços (corte, barba, coloração, etc.)
+- Produtos (pomadas, shampoos, etc.)
+- Assinaturas (Clube do Trato)
+- Outros
 
-Validação:
-- Comparar totais financeiros (MVP vs v2)
-- Verificar crons executando corretamente
-```
+**Categorias de Despesa:**
 
-### Semana 3 — 75% dos tenants
-```
-Adicionar:
-- Tenants maiores
-- Total acumulado: ~35-40 tenants
+- Salários (barbeiros, recepcionista)
+- Aluguel (espaço físico)
+- Fornecedores (produtos para revenda)
+- Impostos (MEI, SIMPLES)
+- Marketing (redes sociais, anúncios)
+- Utilidades (água, luz, internet)
+- Outros
 
-Validação:
-- Performance sob carga
-- Backup/restore testado
-```
+### Planos de Assinatura Padrão
 
-### Semana 4 — 100% dos tenants
-```
-Migrar restantes:
-- Total: 50+ tenants
+Sugestão de planos iniciais para o Clube do Trato:
 
-Ações:
-- MVP 1.0 → Read-only (30 dias)
-- Comunicar usuários: "Migração completa"
-- Monitorar por 7 dias
+- **Básico** (R$ 59,90/mês): 2 cortes/mês
+- **Intermediário** (R$ 89,90/mês): 4 cortes/mês + 1 barba
+- **Premium** (R$ 129,90/mês): Ilimitado cortes + barbas
+
+### Tenant Demo
+
+O tenant demo deve ter dados realistas para:
+
+- Demonstrações comerciais
+- Testes de integração
+- Validação visual do sistema
+
+**Dados sugeridos:**
+
+- Nome: "Barbearia Demo"
+- CNPJ: 00.000.000/0001-00 (fictício)
+- 10 receitas nos últimos 30 dias
+- 10 despesas nos últimos 30 dias
+- 3 assinaturas ativas
+- 1 usuário admin (demo@barberpro.dev / Demo@1234)
+
+### Health Check Completo
+
+O endpoint `/health` deve retornar:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-17T10:00:00Z",
+  "version": "2.0.0",
+  "checks": {
+    "database": {
+      "status": "up",
+      "latency_ms": 12
+    },
+    "migrations": {
+      "status": "up_to_date",
+      "applied": 15,
+      "pending": 0
+    },
+    "redis": {
+      "status": "up",
+      "latency_ms": 3
+    },
+    "external_apis": {
+      "asaas": {
+        "status": "up",
+        "latency_ms": 150
+      }
+    }
+  }
+}
 ```
 
 ---
 
-**Última Atualização:** 14/11/2025
-**Status:** 🔴 Não Iniciado (0%)
-**Próxima Revisão:** Após completar 50% das tarefas
+## 📝 Changelog
+
+### 20/11/2025
+
+- ✅ **T-PROD-002 Concluído** — Validação de integridade completa
+  - Scripts de validação de schema e smoke tests criados
+  - Health check endpoint aprimorado
+  - Documentação VALIDATION_GUIDE.md atualizada
+  - Progresso: 25% → 50%
+- 🟡 **T-PROD-003 em andamento** — Step 2 (configurações iniciais) finalizado no frontend
+  - `tenantConfigService` atualizado para persistir preferências pós-login
+  - Formulário do wizard conectado ao backend com validações
+  - Faltam `/signup`, endpoint `POST /auth/signup` e tutorial de primeiro acesso
+
+### 17/11/2025
+
+- ✅ **T-PROD-001 Concluído** — Seeds de dados iniciais implementados
+  - Criados 3 scripts SQL (categories, plans, demo_tenant)
+  - Programa Go com suporte a --mode=demo e --mode=prod
+  - 6 comandos make adicionados (seed-demo, seed-prod, seed-clean, etc)
+  - Documentação completa em SEED_GUIDE.md
+  - Progresso: 0% → 25%
+
+---
+
+**Última Atualização:** 20/11/2025
+**Status:** 🚀 Em Andamento (50% - 2/4 tarefas concluídas)
+**Próxima Tarefa:** T-PROD-003 (Onboarding Flow)

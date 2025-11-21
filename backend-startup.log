@@ -1,0 +1,1 @@
+{"level":"fatal","ts":1763670733.5590672,"caller":"api/main.go:80","msg":"failed to load config","error":"DATABASE_URL is required","stacktrace":"main.main\n\t/home/andrey/projetos/barber-Analytic-proV2/backend/cmd/api/main.go:80\nruntime.main\n\t/home/andrey/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.linux-amd64/src/runtime/proc.go:283"}

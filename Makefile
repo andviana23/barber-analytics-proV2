@@ -20,6 +20,7 @@ BACKEND_LOG := $(BACKEND_DIR)/tmp/backend.log
 FRONTEND_LOG := $(FRONTEND_DIR)/tmp/frontend.log
 
 DATABASE_URL := postgresql://neondb_owner:npg_83COkAjHMotv@ep-winter-leaf-adhqz08p-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+API_URL ?= http://localhost:8080
 
 GREEN := \033[0;32m
 YELLOW := \033[1;33m
@@ -91,6 +92,14 @@ frontend: ## Iniciar apenas o frontend (Next.js)
 		echo "$(RED)❌ Frontend já está rodando (PID: $$(cat $(FRONTEND_PID)))$(NC)"; \
 		exit 1; \
 	fi
+	@echo "   Verificando porta 3000..."
+	@if lsof -ti:3000 >/dev/null 2>&1; then \
+		echo "$(RED)   ❌ Porta 3000 em uso. Finalizando processo...$(NC)"; \
+		lsof -ti:3000 | xargs kill -9 2>/dev/null || true; \
+		sleep 1; \
+	fi
+	@echo "   Removendo locks anteriores..."
+	@rm -rf $(FRONTEND_DIR)/.next/dev/lock 2>/dev/null || true
 	@if [ ! -d $(FRONTEND_DIR)/node_modules ]; then \
 		echo "$(YELLOW)📦 Instalando dependências...$(NC)"; \
 		cd $(FRONTEND_DIR) && npm install; \
@@ -123,20 +132,57 @@ stop: ## Parar backend + frontend
 	fi
 	@if [ -f $(FRONTEND_PID) ]; then \
 		echo "   Parando frontend (PID: $$(cat $(FRONTEND_PID)))..."; \
-		kill $$(cat $(FRONTEND_PID)) 2>/dev/null || true; \
+		kill -TERM $$(cat $(FRONTEND_PID)) 2>/dev/null || true; \
+		sleep 1; \
 		pkill -P $$(cat $(FRONTEND_PID)) 2>/dev/null || true; \
 		rm -f $(FRONTEND_PID); \
 		echo "   $(GREEN)✅ Frontend parado$(NC)"; \
 	else \
 		echo "   $(YELLOW)⚠️  Frontend não estava rodando$(NC)"; \
 	fi
+	@echo "   Finalizando processos remanescentes..."
+	@pkill -9 -f "air" 2>/dev/null || true
+	@pkill -9 -f "next dev" 2>/dev/null || true
+	@pkill -9 -f "next-server" 2>/dev/null || true
+	@pkill -9 -f "node.*next" 2>/dev/null || true
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+	@echo "   Removendo arquivos de lock..."
+	@rm -rf $(FRONTEND_DIR)/.next/dev/lock 2>/dev/null || true
+	@rm -rf $(FRONTEND_DIR)/.next/cache/webpack 2>/dev/null || true
+	@sleep 1
+	@echo ""
+	@echo "$(GREEN)✅ Todos os serviços foram parados$(NC)" \
+		echo "   $(GREEN)✅ Frontend parado$(NC)"; \
+	else \
+		echo "   $(YELLOW)⚠️  Frontend não estava rodando$(NC)"; \
+	fi
+	@echo "   Finalizando processos remanescentes..."
 	@pkill -f "air" 2>/dev/null || true
 	@pkill -f "next dev" 2>/dev/null || true
+	@pkill -f "next-server" 2>/dev/null || true
+	@pkill -f "node.*next" 2>/dev/null || true
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 	@echo ""
 	@echo "$(GREEN)✅ Todos os serviços foram parados$(NC)"
 
 .PHONY: restart
 restart: stop dev ## Reiniciar backend + frontend
+
+.PHONY: force-stop
+force-stop: ## Parar TODOS os processos (emergência - mata tudo brutalmente)
+	@echo "$(RED)⚠️  FORÇA BRUTA: Matando TODOS os processos...$(NC)"
+	@pkill -9 -f "air" 2>/dev/null || true
+	@pkill -9 -f "next" 2>/dev/null || true
+	@pkill -9 -f "node" 2>/dev/null || true
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+	@rm -rf $(BACKEND_DIR)/.backend.pid 2>/dev/null || true
+	@rm -rf $(FRONTEND_DIR)/.frontend.pid 2>/dev/null || true
+	@rm -rf $(FRONTEND_DIR)/.next/dev 2>/dev/null || true
+	@echo "$(GREEN)✅ Limpeza forçada concluída$(NC)"
+	@echo "$(YELLOW)⚠️  AVISO: Este comando matou TODOS os processos Node.js e Go$(NC)"
 
 .PHONY: status
 status: ## Verificar status dos serviços
@@ -196,6 +242,7 @@ clean: stop ## Limpar arquivos temporários e logs
 	@rm -rf $(FRONTEND_DIR)/tmp/*.log
 	@rm -rf $(FRONTEND_DIR)/.frontend.pid
 	@rm -rf $(BACKEND_DIR)/.air.toml.lock 2>/dev/null || true
+	@rm -rf $(FRONTEND_DIR)/.next/dev 2>/dev/null || true
 	@rm -rf $(FRONTEND_DIR)/.next/cache 2>/dev/null || true
 	@echo "$(GREEN)✅ Limpeza concluída$(NC)"
 
@@ -237,6 +284,16 @@ build-frontend: ## Build do frontend (produção)
 
 .PHONY: build
 build: build-backend build-frontend ## Build completo (backend + frontend)
+
+.PHONY: validate-schema
+validate-schema: ## Validar schema do banco com scripts/validate_schema.sh (usa DATABASE_URL)
+	@echo "$(BLUE)🔍 Validando schema do banco...$(NC)"
+	@./scripts/validate_schema.sh "$(DATABASE_URL)"
+
+.PHONY: smoke-tests
+smoke-tests: ## Executar smoke tests E2E contra API (ajuste API_URL se necessário)
+	@echo "$(BLUE)🧪 Smoke tests na API: $(API_URL)$(NC)"
+	@./scripts/smoke_tests.sh "$(API_URL)"
 
 # ============================================================================
 # Default Target

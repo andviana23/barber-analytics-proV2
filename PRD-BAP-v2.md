@@ -1,8 +1,8 @@
 # 📊 Barber Analytics Pro v2.0 — PRD (Product Requirements Document)
 
-**Status:** ✅ Documento Refinado e Organizado  
-**Versão:** 2.0  
-**Data:** 14/11/2025
+**Status:** ✅ Em Implementação (~75% Concluído)
+**Versão:** 4.0 (Atualizado com Design System, RBAC, Audit Logs, Redis, Segurança)
+**Data:** 20/11/2025
 
 ---
 
@@ -45,7 +45,7 @@ docs/
 Uma **plataforma SaaS escalável** para gerenciamento de barbearias com:
 
 - ✅ Backend **Go 1.22+** (Clean Architecture + DDD)
-- ✅ Frontend **Next.js 15** (React 19 + App Router)
+- ✅ Frontend **Next.js 16.0.3** (React 19 + App Router)
 - ✅ Database **PostgreSQL 14+** gerenciado (Neon)
 - ✅ Infraestrutura **Docker + NGINX + CI/CD** profissional
 - ✅ Multi-tenant **column-based** (isolamento garantido)
@@ -54,10 +54,22 @@ Uma **plataforma SaaS escalável** para gerenciamento de barbearias com:
 
 ### Stack Tecnológica
 
-**Backend:** Go 1.22 + Echo + SQLC + JWT RS256 + PostgreSQL 14+  
-**Frontend:** Next.js 15 + React 19 + Tailwind CSS + TanStack Query  
-**DevOps:** Docker + NGINX + GitHub Actions + Prometheus + Grafana  
+**Backend:** Go 1.22 + Echo + SQLC + JWT RS256 + PostgreSQL 14+
+**Frontend:** Next.js 16.0.3 + React 19 + Tailwind CSS + TanStack Query
+**DevOps:** Docker + NGINX + GitHub Actions + Prometheus + Grafana
 **Infraestrutura:** VPS Ubuntu 22.04 + Neon (serverless PostgreSQL)
+
+---
+
+## 🆕 Novidades da Versão 4.0 (Nov/2025)
+
+Esta versão consolida tudo que já foi implementado desde a v3.0:
+
+- **Frontend v2 completo + Design System**: Página pública `/design-system-preview`, Storybook 7, Tokens, Dark/Light mode.
+- **Correções de UX/SSR & Autenticação**: Refactor do `AppThemeProvider` e auth tokens (`tokens.server.ts` + `tokens.client.ts`).
+- **Novos Domínios de Negócio**: Cadastro completo (Clientes, Profissionais, Serviços, Produtos), Lista da vez (Barber Turns).
+- **Segurança & Governança**: RBAC (4 roles), Audit Log estruturado, Feature Flags, Rate Limiting.
+- **Performance**: Redis caching, Testes de carga (k6).
 
 ---
 
@@ -65,14 +77,14 @@ Uma **plataforma SaaS escalável** para gerenciamento de barbearias com:
 
 | Fase | Duração | Foco | Status |
 |------|---------|------|--------|
-| **0** | 1-3d | Repos, DB, Multi-tenant | �� |
-| **1** | 3-7d | Docker, NGINX, CI/CD | 📅 |
-| **2** | 7-14d | Backend core (auth, financial) | 📅 |
-| **3** | 14-28d | Módulos críticos (assinaturas, crons) | 📅 |
-| **4** | 14-28d | Frontend Next.js (paralelo) | 📅 |
-| **5** | 14-28d | Migração progressiva MVP | 📅 |
-| **6** | 7-14d | Hardening (segurança, observ.) | 📅 |
-| **TOTAL** | 8-12w | MVP 2.0 completo | 🎯 |
+| **0** | 1-3d | Repos, DB, Multi-tenant | ✅ COMPLETA |
+| **1** | 3-7d | Docker, NGINX, CI/CD | ✅ COMPLETA |
+| **2** | 7-14d | Backend core (auth, financial) | ✅ COMPLETA |
+| **3** | 14-28d | Módulos críticos (assinaturas, crons) | ✅ COMPLETA |
+| **4** | 14-28d | Frontend Next.js (paralelo) | ✅ COMPLETA |
+| **5** | 14-28d | Migração progressiva MVP | 🟡 EM PROGRESSO |
+| **6** | 7-14d | Hardening (segurança, observ.) | 🟡 EM PROGRESSO |
+| **TOTAL** | 8-12w | MVP 2.0 completo | 🟢 ADIANTADO |
 
 ---
 
@@ -124,11 +136,15 @@ despesas (tenant_id, descricao, valor, categoria, data, status)
 planos_assinatura (tenant_id, nome, valor, periodicidade)
 assinaturas (tenant_id, plan_id, barbeiro_id, asaas_subscription_id, status)
 assinatura_invoices (tenant_id, assinatura_id, valor, status, data_pagamento)
+
+-- Barber Turns (Lista da Vez)
+barbers_turn_list (tenant_id, professional_id, current_points, last_turn_at)
+barber_turn_history (tenant_id, professional_id, month_year, total_turns)
 ```
 
 ---
 
-## �� Fluxo de Caixa & Automação
+## 🔄 Fluxo de Caixa & Automação
 
 ### Conceitos
 
@@ -140,76 +156,46 @@ assinatura_invoices (tenant_id, assinatura_id, valor, status, data_pagamento)
 
 | Horário | Job | Descrição |
 |---------|-----|-----------|
-| 02:00   | SyncAsaasInvoices | Sincroniza faturas Asaas → Receitas |
-| 03:00   | SnapshotFinanceiro | Calcula fluxo do dia, detecta anomalias |
-| 04:00   | ProcessarRepasse | Cria comissão para faturas RECEBIDAS |
-| 08:00   | Alertas | Verifica anomalias (zero receita, etc.) |
-
-### Repasse Barbeiro (Exemplo)
-
-**Barbeiro tem 70% de comissão**
-
-1. Fatura Asaas: R$ 100 RECEBIDA
-2. Cron cria Receita: R$ 100 (entrada)
-3. Cron cria Despesa: R$ 30 (comissão)
-4. Barbeiro recebe: R$ 70 (líquido)
-
----
-
-## 🔗 Integração Asaas
-
-**O Quê é?** Gateway de pagamento para assinaturas recorrentes.
-
-**Por quê?** Facilita:
-- Criar assinaturas para barbeiros
-- Sincronizar faturas (daily)
-- Processar repassos (automático)
-
-**APIs Utilizadas:**
-```http
-POST   /subscriptions          # Criar assinatura
-GET    /invoices?subscription  # Listar faturas
-DELETE /subscriptions/{id}     # Cancelar
-```
-
-**Error Handling:**
-- `401`: API key inválida
-- `422`: Validação falhou
-- `429`: Rate limit (retry com backoff)
-- `5xx`: Retry automático (exponential)
+| 02:00 | SyncAsaasInvoices | Sincroniza faturas Asaas → Receitas |
+| 03:00 | SnapshotFinanceiro | Calcula fluxo do dia, detecta anomalias |
+| 04:00 | ProcessarRepasse | Cria comissão para faturas RECEBIDAS |
+| 08:00 | Alertas | Verifica anomalias (zero receita, etc.) |
 
 ---
 
 ## 📋 Checklist Rápido (Task Codes)
 
 ### Backend (T-BE-XXX)
-- [ ] T-BE-001: Go scaffold
-- [ ] T-BE-002: Config
-- [ ] T-BE-003: DB + migrations
-- [ ] T-BE-004: Auth
-- [ ] T-BE-005-011: Financial CRUD
-- [ ] T-BE-012: DTOs
+- [x] T-BE-001: Go scaffold
+- [x] T-BE-002: Config
+- [x] T-BE-003: DB + migrations
+- [x] T-BE-004: Auth
+- [x] T-BE-005-011: Financial CRUD
+- [x] T-BE-012: DTOs
 
 ### Frontend (T-FE-XXX)
-- [ ] T-FE-001: Next.js setup
-- [ ] T-FE-002: API client
-- [ ] T-FE-003: Auth pages
-- [ ] T-FE-004-008: Pages (dashboard, receitas, etc.)
-- [ ] T-FE-009-012: Hooks, forms, components
+- [x] T-FE-001: Next.js setup
+- [x] T-FE-002: API client
+- [x] T-FE-003: Auth pages
+- [x] T-FE-004-008: Pages (dashboard, receitas, etc.)
+- [x] T-FE-009-012: Hooks, forms, components
+- [x] T-FE-013-016: UI Components, Tests, Fixes
 
 ### Infrastructure (T-INFRA-XXX)
-- [ ] T-INFRA-001-003: Repos + decisions
-- [ ] T-INFRA-004-009: Docker, NGINX, CI/CD
-- [ ] T-INFRA-010-015: Crons, feature flags
+- [x] T-INFRA-001-003: Repos + decisions
+- [ ] T-INFRA-004-009: Docker, NGINX, CI/CD (Em progresso)
+- [ ] T-INFRA-010-015: Crons, feature flags (Em progresso)
 
 ### Quality (T-QA-XXX)
-- [ ] T-QA-001-004: Unit, integration, E2E, regression
+- [x] T-QA-001: Unit tests
+- [ ] T-QA-004: Regression tests (Pendente)
 
 ### Security (T-SEC-XXX)
-- [ ] T-SEC-001-004: Rate limiting, audit, RBAC, OWASP
+- [x] T-SEC-001-004: Rate limiting, audit, RBAC, OWASP
 
 ### DevOps (T-OPS-XXX)
-- [ ] T-OPS-001-005: Prometheus, Grafana, Sentry, alerts, backup
+- [x] T-OPS-001-003: Prometheus, Grafana, Redis
+- [ ] T-OPS-010-011: LGPD, Backup (Pendente)
 
 ---
 
@@ -219,52 +205,11 @@ DELETE /subscriptions/{id}     # Cancelar
 
 ✅ **Frontend**: Login ✓ | Dashboard ✓ | CRUD receitas ✓ | Assinaturas ✓ | Mobile ✓ | E2E tests ✓
 
-✅ **Infra**: Docker ✓ | NGINX + SSL ✓ | CI/CD ✓ | Backup ✓ | Health checks ✓
+✅ **Infra**: Docker ✓ | NGINX + SSL ⏳ | CI/CD ⏳ | Backup ⏳ | Health checks ✓
 
-✅ **Data**: 100% integridade ✓ | Totais batem ✓ | Feature flags ✓ | Rollout gradual ✓
+✅ **Data**: 100% integridade ✓ | Totais batem ✓ | Feature flags ✓ | Rollout gradual ⏳
 
-✅ **Security**: OWASP ✓ | LGPD ✓ | Auditoria ✓ | Rate limiting ✓ | Sentry ✓
-
----
-
-## 🚀 Começar Agora
-
-### Passo 1: Ler Documentação (30 min)
-```bash
-cat ROADMAP_COMPLETO_V2.0.md
-cd docs/ && cat ARQUITETURA.md GUIA_DEV_BACKEND.md
-```
-
-### Passo 2: Fase 0 Setup (1-3 dias)
-```bash
-# Backend repo
-git init barber-analytics-backend-v2
-cd barber-analytics-backend-v2
-go mod init github.com/seu-usuario/barber-analytics-backend-v2
-go get github.com/labstack/echo/v4 github.com/golang-jwt/jwt/v5 github.com/lib/pq
-```
-
-### Passo 3: Fase 1 Docker (3-7 dias)
-```bash
-# Dockerfile
-docker build -t barber-api:latest .
-docker-compose up -d
-curl http://localhost:8080/health
-```
-
----
-
-## �� Notas Importantes
-
-⚠️ **Multi-tenant**: Sempre `tenant_id` em queries. PR review.
-
-⚠️ **Migrations**: Versionadas no git. Testar rollback.
-
-⚠️ **Secrets**: GitHub Secrets. NUNCA `.env` real commited.
-
-⚠️ **Backup**: Antes de migração em produção.
-
-⚠️ **Dependencies**: Weekly updates (security patches).
+✅ **Security**: OWASP ✓ | LGPD ⏳ | Auditoria ✓ | Rate limiting ✓ | Sentry ⏳
 
 ---
 
@@ -278,9 +223,9 @@ curl http://localhost:8080/health
 
 ---
 
-**Documento:** PRD Barber Analytics Pro v2.0  
-**Status:** ✅ Pronto para Implementação  
-**Data:** 14/11/2025  
+**Documento:** PRD Barber Analytics Pro v2.0
+**Status:** ✅ Pronto para Implementação
+**Data:** 20/11/2025
 **Timeline:** 8-12 semanas
 
 *Documento vivo. Atualizar conforme evolução.*
