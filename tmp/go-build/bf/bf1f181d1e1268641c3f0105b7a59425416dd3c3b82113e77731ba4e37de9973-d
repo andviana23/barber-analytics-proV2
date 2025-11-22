@@ -1,0 +1,14 @@
+./compensacoes_bancarias.sql.go
+./contas_a_pagar.sql.go
+./contas_a_receber.sql.go
+./db.go
+./dre_mensal.sql.go
+./fluxo_caixa_diario.sql.go
+./metas_barbeiro.sql.go
+./metas_mensais.sql.go
+./metas_ticket_medio.sql.go
+./models.go
+./precificacao_config.sql.go
+./precificacao_simulacoes.sql.go
+./querier.go
+./user_preferences.sql.go

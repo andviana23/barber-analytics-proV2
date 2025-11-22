@@ -1,0 +1,8 @@
+./create_compensacao.go
+./create_conta_pagar.go
+./create_conta_receber.go
+./generate_dre.go
+./generate_fluxo_diario.go
+./marcar_compensacao.go
+./marcar_pagamento.go
+./marcar_recebimento.go

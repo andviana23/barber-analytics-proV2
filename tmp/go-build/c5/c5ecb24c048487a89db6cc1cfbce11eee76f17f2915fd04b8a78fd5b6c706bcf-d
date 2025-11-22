@@ -1,0 +1,12 @@
+./compensacao_bancaria.go
+./conta_pagar.go
+./conta_receber.go
+./doc.go
+./dre_mensal.go
+./fluxo_caixa_diario.go
+./meta_barbeiro.go
+./meta_mensal.go
+./meta_ticket_medio.go
+./precificacao_config.go
+./precificacao_simulacao.go
+./user_preferences.go

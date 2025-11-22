@@ -10,8 +10,8 @@
 # ============================================================================
 # Variáveis
 # ============================================================================
-BACKEND_DIR := /home/andrey/projetos/barber-Analytic-proV2/backend
-FRONTEND_DIR := /home/andrey/projetos/barber-Analytic-proV2/frontend
+BACKEND_DIR := /home/andrey/Projetos/barber-analytics-proV2/backend
+FRONTEND_DIR := /home/andrey/Projetos/barber-analytics-proV2/frontend
 
 BACKEND_PID := $(BACKEND_DIR)/.backend.pid
 FRONTEND_PID := $(FRONTEND_DIR)/.frontend.pid
@@ -102,10 +102,10 @@ frontend: ## Iniciar apenas o frontend (Next.js)
 	@rm -rf $(FRONTEND_DIR)/.next/dev/lock 2>/dev/null || true
 	@if [ ! -d $(FRONTEND_DIR)/node_modules ]; then \
 		echo "$(YELLOW)📦 Instalando dependências...$(NC)"; \
-		cd $(FRONTEND_DIR) && npm install; \
+		cd $(FRONTEND_DIR) && pnpm install; \
 	fi
 	@cd $(FRONTEND_DIR) && \
-		nohup npm run dev > $(FRONTEND_LOG) 2>&1 & echo $$! > $(FRONTEND_PID)
+		nohup pnpm dev > $(FRONTEND_LOG) 2>&1 & echo $$! > $(FRONTEND_PID)
 	@sleep 3
 	@if ps -p $$(cat $(FRONTEND_PID)) > /dev/null 2>&1; then \
 		echo "$(GREEN)✅ Frontend rodando (PID: $$(cat $(FRONTEND_PID)))$(NC)"; \
@@ -151,19 +151,6 @@ stop: ## Parar backend + frontend
 	@rm -rf $(FRONTEND_DIR)/.next/dev/lock 2>/dev/null || true
 	@rm -rf $(FRONTEND_DIR)/.next/cache/webpack 2>/dev/null || true
 	@sleep 1
-	@echo ""
-	@echo "$(GREEN)✅ Todos os serviços foram parados$(NC)" \
-		echo "   $(GREEN)✅ Frontend parado$(NC)"; \
-	else \
-		echo "   $(YELLOW)⚠️  Frontend não estava rodando$(NC)"; \
-	fi
-	@echo "   Finalizando processos remanescentes..."
-	@pkill -f "air" 2>/dev/null || true
-	@pkill -f "next dev" 2>/dev/null || true
-	@pkill -f "next-server" 2>/dev/null || true
-	@pkill -f "node.*next" 2>/dev/null || true
-	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
-	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 	@echo ""
 	@echo "$(GREEN)✅ Todos os serviços foram parados$(NC)"
 
@@ -264,8 +251,8 @@ install: ## Instalar dependências (backend + frontend)
 	@cd $(BACKEND_DIR) && go mod download
 	@echo "$(GREEN)✅ Backend OK$(NC)"
 	@echo ""
-	@echo "$(BLUE)⚛️  Frontend (npm)...$(NC)"
-	@cd $(FRONTEND_DIR) && npm install
+	@echo "$(BLUE)⚛️  Frontend (pnpm)...$(NC)"
+	@cd $(FRONTEND_DIR) && pnpm install
 	@echo "$(GREEN)✅ Frontend OK$(NC)"
 	@echo ""
 	@echo "$(GREEN)✅ Todas as dependências instaladas$(NC)"
@@ -279,7 +266,7 @@ build-backend: ## Build do backend (produção)
 .PHONY: build-frontend
 build-frontend: ## Build do frontend (produção)
 	@echo "$(BLUE)🏗️  Building frontend...$(NC)"
-	@cd $(FRONTEND_DIR) && npm run build
+	@cd $(FRONTEND_DIR) && pnpm build
 	@echo "$(GREEN)✅ Frontend compilado$(NC)"
 
 .PHONY: build

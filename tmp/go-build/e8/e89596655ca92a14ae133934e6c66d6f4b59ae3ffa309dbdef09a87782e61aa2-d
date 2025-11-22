@@ -1,0 +1,5 @@
+./contas_repository.go
+./financial_repository.go
+./metas_repository.go
+./pricing_repository.go
+./user_preferences_repository.go

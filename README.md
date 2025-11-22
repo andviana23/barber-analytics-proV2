@@ -205,49 +205,71 @@ npm run test:e2e  # Playwright E2E
 
 ## 📊 Status Atual
 
-**Data:** 20/11/2025
+**Data:** 22/11/2025
+**🎉 MARCO ALCANÇADO: 44/44 ENDPOINTS IMPLEMENTADOS!**
 
-### ✅ Módulos Implementados (90%)
+### ✅ Backend - 100% CONCLUÍDO
 
-| Módulo                    | Status      | Cobertura |
-| ------------------------- | ----------- | --------- |
-| Autenticação              | ✅ Completo | 95%       |
-| Cadastro de Clientes      | ✅ Completo | 90%       |
-| Cadastro de Profissionais | ✅ Completo | 90%       |
-| Cadastro de Serviços      | ✅ Completo | 90%       |
-| Meios de Pagamento        | ✅ Completo | 90%       |
-| Lista da Vez              | ✅ Completo | 100%      |
-| Onboarding                | 🟡 80%      | 80%       |
+| Módulo                    | Status      | Endpoints | Data Conclusão |
+| ------------------------- | ----------- | --------- | -------------- |
+| Autenticação              | ✅ Completo | 5         | 20/11/2025     |
+| Cadastro de Clientes      | ✅ Completo | 5         | 20/11/2025     |
+| Cadastro de Profissionais | ✅ Completo | 5         | 20/11/2025     |
+| Cadastro de Serviços      | ✅ Completo | 5         | 20/11/2025     |
+| Meios de Pagamento        | ✅ Completo | 5         | 20/11/2025     |
+| Lista da Vez              | ✅ Completo | 7         | 20/11/2025     |
+| **Metas**                 | ✅ **NOVO** | **15**    | **22/11/2025** |
+| **Precificação**          | ✅ **NOVO** | **9**     | **22/11/2025** |
+| **Financeiro**            | ✅ **NOVO** | **20**    | **22/11/2025** |
+| Onboarding                | ✅ Completo | 2         | 20/11/2025     |
 
-### 🔴 Bloqueador Atual
+**Total:** 78 endpoints backend funcionais ✅
 
-**Onboarding Endpoint Backend** - Falta implementar:
+### 🆕 Módulos Recém-Implementados (22/11)
 
-- `CompleteOnboardingUseCase`
-- `TenantHandler`
-- Dependency injection
+**METAS (15 endpoints):**
 
-**Tempo estimado:** 1-2 horas
-**Documentação:** [PLANO_CONTINUACAO_ONBOARDING.md](./docs/PLANO_CONTINUACAO_ONBOARDING.md)
+- MetaMensal: 5 endpoints (POST, GET/:id, GET, PUT/:id, DELETE/:id)
+- MetaBarbeiro: 5 endpoints (POST, GET/:id, GET, PUT/:id, DELETE/:id)
+- MetaTicketMedio: 5 endpoints (POST, GET/:id, GET, PUT/:id, DELETE/:id)
 
-### 🟡 Em Desenvolvimento
+**PRECIFICAÇÃO (9 endpoints):**
 
-- [ ] Validações de duplicados (CNPJ/Email)
-- [ ] Testes automatizados completos
-- [ ] Transaction support (rollback)
+- Config: 4 endpoints (POST, GET, PUT, DELETE)
+- Simulação: 5 endpoints (POST simulate, POST save, GET/:id, GET, DELETE/:id)
 
-### ⏳ Próximos Módulos
+**FINANCEIRO (20 endpoints):**
 
-- [ ] Financeiro (receitas, despesas)
-- [ ] Assinaturas (Clube do Trato + Asaas)
+- ContaPagar: 6 endpoints (CRUD + MarcarPagamento)
+- ContaReceber: 6 endpoints (CRUD + MarcarRecebimento)
+- Compensação: 3 endpoints (GET, List, DELETE)
+- FluxoCaixa: 2 endpoints (GET, List)
+- DRE: 2 endpoints (GET/:month, List)
+- Cronjob: 1 endpoint (GenerateFluxoDiario)
+
+**Ver detalhes:** `/Tarefas/01-BLOQUEIOS-BASE/VERTICAL_SLICE_ALL_MODULES.md`
+
+### 🟡 Frontend - Em Progresso
+
+- [x] Cadastros básicos (Clientes, Profissionais, Serviços)
+- [x] Lista da Vez
+- [x] Onboarding
+- [ ] Metas (UI + hooks) ← **PRÓXIMO**
+- [ ] Precificação (UI + hooks)
+- [ ] Financeiro (UI + hooks)
+
+### ⏳ Próximas Implementações
+
 - [ ] Estoque (produtos, movimentações)
+- [ ] Assinaturas (Clube do Trato + Asaas)
 - [ ] Agendamentos (DayPilot Scheduler)
+- [ ] Relatórios Avançados
 
 ---
 
 ## 🗓️ Roadmap
 
-### Fase 1: Core (Concluída ✅)
+### Fase 1: Core (✅ Concluída)
 
 - [x] Setup projeto (Go + Next.js)
 - [x] Database (PostgreSQL + Migrations)
@@ -255,30 +277,46 @@ npm run test:e2e  # Playwright E2E
 - [x] Multi-tenancy
 - [x] Cadastros básicos
 
-### Fase 2: Onboarding (80% 🟡)
+### Fase 2: Onboarding (✅ Concluída - 20/11/2025)
 
 - [x] Frontend signup page
 - [x] Frontend onboarding page
 - [x] Backend signup use case
-- [ ] Backend complete onboarding endpoint ← **ATUAL**
-- [ ] Testes E2E
+- [x] Backend complete onboarding endpoint
+- [x] Testes E2E
 
-### Fase 3: Financeiro (0% ⏳)
+### Fase 3: Metas, Precificação & Financeiro (✅ Concluída - 22/11/2025)
 
-- [ ] CRUD Receitas
-- [ ] CRUD Despesas
-- [ ] Categorias
-- [ ] DRE
-- [ ] Fluxo de Caixa
+**METAS:**
 
-### Fase 4: Assinaturas (0% ⏳)
+- [x] CRUD MetaMensal (5 endpoints)
+- [x] CRUD MetaBarbeiro (5 endpoints)
+- [x] CRUD MetaTicketMedio (5 endpoints)
+
+**PRECIFICAÇÃO:**
+
+- [x] CRUD Config (4 endpoints)
+- [x] CRUD Simulação (5 endpoints)
+
+**FINANCEIRO:**
+
+- [x] CRUD ContaPagar (6 endpoints)
+- [x] CRUD ContaReceber (6 endpoints)
+- [x] Compensação Bancária (3 endpoints)
+- [x] FluxoCaixa (2 endpoints)
+- [x] DRE (2 endpoints)
+- [x] Cronjob FluxoDiario (1 endpoint)
+
+**Resultado:** 44 endpoints backend implementados e compilando ✅
+
+### Fase 4: Assinaturas (⏳ Planejada)
 
 - [ ] Clube do Trato
 - [ ] Integração Asaas
 - [ ] Webhooks
 - [ ] Cron de sincronização
 
-### Fase 5: Estoque (0% ⏳)
+### Fase 5: Estoque (⏳ Planejada)
 
 - [ ] CRUD Produtos
 - [ ] Movimentações

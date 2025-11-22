@@ -1,13 +1,30 @@
-> Criado em: 20/11/2025 20:43 (America/Sao_Paulo)
+# VALTARIS v 1.0 — Mapa de Telas
 
-# Mapa de Telas
+Roteiro das telas principais e como o Design System se encaixa. Light é padrão; todas usam tokens do tema.
 
-- Login / Onboarding
-- Dashboard (KPIs)
-- Receitas / Despesas / Fluxo de Caixa
-- Assinaturas (planos, assinantes)
-- Lista da Vez / Agendamentos
-- Cadastro: clientes, profissionais, serviços, produtos, meios de pagamento, cupons
-- Design System Preview / Storybook
+- **Login / Onboarding**  
+  - Layout público `(auth)`; usa `VCard` + `VButton` primário; formulários com RHF+Zod.
 
-Use API_REFERENCE.md e implementações em frontend/app/(private) para detalhar rotas/URLs.
+- **Dashboard (KPIs)**  
+  - Home de `(dashboard)`; cards com vidro (`VCard`), badges de status e gráficos tematizados.
+
+- **Financeiro: Receitas / Despesas / Fluxo de Caixa**  
+  - Tabelas `VTable`, filtros com `FormInput`, modais `VModal`.  
+  - Agregações e filtros sempre com cache TanStack Query incluindo `tenantId`.
+
+- **Financeiro: Contas a Pagar/Receber**  
+  - Formulários com estados de erro em `var(--valtaris-danger)`; badges de status oficiais.
+
+- **Assinaturas (planos, assinantes)**  
+  - Forms e tabelas; usar `StatusBadge` para ciclo de cobrança; modais com vidro.
+
+- **Lista da Vez / Agendamentos**  
+  - DayPilot com classe `daypilot-valtaris` e CSS vars; não usar estilos inline.
+
+- **Cadastros (clientes, profissionais, serviços, produtos, meios, cupons)**  
+  - Reutilizar wrappers de formulário; tabelas com `compact mode` opcional.
+
+- **Design System Preview / Storybook**  
+  - Página demo para tokens + componentes; referenciar `01-FOUNDATIONS.md` e `03-COMPONENTS.md`.
+
+Para rotas/URLs detalhadas, ver `frontend/app/(dashboard)` e `API_REFERENCE.md`.

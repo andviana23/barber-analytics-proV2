@@ -29,8 +29,7 @@
 | **TypeScript**     | 5.x                         | Linguagem frontend                                    |
 | **Echo**           | v4.13.4                     | Framework HTTP para Go                                |
 | **SQLC**           | Latest                      | Type-safe SQL code generator                          |
-| **golang-migrate** | Latest                      | Gerenciamento de migrations                           |
-| **Docker**         | 24.x+                       | Containerização (opcional)                            |
+| **golang-migrate** | Latest                      | Gerenciamento de 
 | **Git**            | 2.x+                        | Controle de versão                                    |
 | **Make**           | 4.x+                        | Automação de tarefas                                  |
 
