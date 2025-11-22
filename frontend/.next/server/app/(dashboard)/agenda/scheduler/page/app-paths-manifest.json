@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/agenda/scheduler/page": "app/(dashboard)/agenda/scheduler/page.js"
+}

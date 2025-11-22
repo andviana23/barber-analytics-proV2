@@ -1,0 +1,83 @@
+{
+  "app": {
+    "[project]/frontend/app/(dashboard)/agenda/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/agenda/scheduler/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/assinaturas/[id]/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/assinaturas/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/cadastros/clientes/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/cadastros/cupons/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/cadastros/meios-pagamento/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/cadastros/produtos/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/cadastros/profissionais/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/cadastros/servicos/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/dashboard/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/financeiro/despesas/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/financeiro/fluxo/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/financeiro/pagar/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/financeiro/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/financeiro/receber/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/(dashboard)/financeiro/receitas/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/_not-found/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ],
+    "[project]/frontend/app/page": [
+      "static/media/0c89a48fa5027cee-s.p.4564287c.woff2",
+      "static/media/051742360c26797e-s.p.102b7f24.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

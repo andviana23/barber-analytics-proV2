@@ -1,0 +1,12 @@
+# Implementações pendentes no MetasHandler:
+
+1. UpdateMetaMensal (linha ~374)
+2. DeleteMetaMensal (linha ~389)
+3. GetMetaBarbeiro (linha ~404)
+4. ListMetasBarbeiro (linha ~418)
+5. UpdateMetaBarbeiro (linha ~435)
+6. DeleteMetaBarbeiro (linha ~449)
+7. GetMetaTicketMedio (linha ~464)
+8. ListMetasTicketMedio (linha ~478)
+9. UpdateMetaTicketMedio (linha ~495)
+10. DeleteMetaTicketMedio (linha ~509)
